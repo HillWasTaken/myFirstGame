@@ -1,6 +1,6 @@
 import pygame
 import random
-from spawnFood import spawnFood
+from food import spawnFood
 from enemy import spawnEnemy
 
 pygame.init()
