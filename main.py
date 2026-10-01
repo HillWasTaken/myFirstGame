@@ -107,6 +107,7 @@ while running:
                 counter -= 1
             elif bullet["position"].distance_to((enemy_x, enemy_y)) < bullet_radius + enemy_radius:
                 enemy_x, enemy_y = spawnEnemy()
+                couter += 1
             elif (0 <= bullet["position"].x <= screen.get_width() and 0 <= bullet["position"].y <= screen.get_height()):
                 remaining_bullets.append(bullet)
                 
@@ -114,7 +115,6 @@ while running:
 
         if pygame.math.Vector2(x,y).distance_to((food_x, food_y)) < 30:
             food_x, food_y = spawnFood()
-            counter += 1
 
     # Draw
     screen.fill((20, 20, 30))
@@ -145,6 +145,12 @@ while running:
         screen.blit(text, (10,10))
     else:
         pygame.draw.rect(screen, (217, 155, 141), pygame.Rect(30,30, (screen.get_width() - 60), (screen.get_height() - 60)), 1)
+        text = font.render(
+            f"Paused\nScore: {counter}   Stamina: {int(stamina)}   Health: {player_health}",
+            True,
+            (255,255,255)
+        )
+        screen.blit(text, ((screen.get_width() / 2.2), 50))
 
     pygame.display.flip()
 
