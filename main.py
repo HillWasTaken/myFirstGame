@@ -1,7 +1,7 @@
 import pygame
 import random
 from food import spawnFood
-from enemy import spawnEnemy
+from enemy import enemyAttack, spawnEnemy
 
 pygame.init()
 screen = pygame.display.set_mode((800, 600))
@@ -9,10 +9,19 @@ pygame.display.set_caption("My first game")
 clock = pygame.time.Clock()
 
 x, y = 400, 300
-speed = 300
+speed = 150
+stamina = 100
+max_stamina = 100
+sprint_multiplier = 2
+stamina_drain = 35
+stamina_regen = 20
 player_radius = 20
 enemy_speed = 150
 enemy_radius = 20
+player_health = 100
+enemy_damage = 10
+enemy_attack_interval = 1.0
+enemy_attack_timer = 0
 line_length = 35
 bullet_speed = 600
 bullet_radius = 5
@@ -29,6 +38,7 @@ while running:
     dt = clock.tick(60) / 1000  # seconds sinds last frame, max 60 FPS
 
     # 1. Input / events
+    keys = pygame.key.get_pressed()
     fire_bullet = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -36,20 +46,38 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             fire_bullet = True
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] or keys[pygame.K_a]:  x -= speed * dt
-    if keys[pygame.K_RIGHT] or keys[pygame.K_d]: x += speed * dt
-    if keys[pygame.K_UP] or keys[pygame.K_w]:    y -= speed * dt
-    if keys[pygame.K_DOWN] or keys[pygame.K_s]:  y += speed * dt
+    shift_held = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+    sprinting = shift_held and stamina > 0
+    if sprinting:
+        current_speed = speed * sprint_multiplier
+        stamina = max(0, stamina - stamina_drain * dt)
+    else:
+        current_speed = speed
+        if not shift_held:
+            stamina = min(max_stamina, stamina + stamina_regen * dt)
+
+    if keys[pygame.K_LEFT] or keys[pygame.K_a]:  x -= current_speed * dt
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d]: x += current_speed * dt
+    if keys[pygame.K_UP] or keys[pygame.K_w]:    y -= current_speed * dt
+    if keys[pygame.K_DOWN] or keys[pygame.K_s]:  y += current_speed * dt
 
     x = max(player_radius, min(x, screen.get_width() - player_radius))
     y = max(player_radius, min(y, screen.get_height() - player_radius))
 
     enemy_direction = pygame.math.Vector2(x - enemy_x, y - enemy_y)
-    if enemy_direction.length_squared() > 0:
-        enemy_direction.normalize_ip()
-        enemy_x += enemy_direction.x * enemy_speed * dt
-        enemy_y += enemy_direction.y * enemy_speed * dt
+    enemy_pos = pygame.math.Vector2(enemy_x, enemy_y)
+    player_pos = pygame.math.Vector2(x, y)
+    distance = enemy_pos.distance_to(player_pos)
+    if distance > enemy_radius + player_radius:
+        if enemy_direction.length_squared() > 0:
+            enemy_direction.normalize_ip()
+            enemy_x += enemy_direction.x * enemy_speed * dt
+            enemy_y += enemy_direction.y * enemy_speed * dt
+
+    enemy_attack_timer = max(0, enemy_attack_timer - dt)
+    if enemy_attack_timer == 0 and enemyAttack((x, y), (enemy_x, enemy_y)):
+        player_health = max(0, player_health - enemy_damage)
+        enemy_attack_timer = enemy_attack_interval
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
     direction = pygame.math.Vector2(mouse_x - x, mouse_y - y)
@@ -102,7 +130,11 @@ while running:
         bullet_center = (int(bullet["position"].x), int(bullet["position"].y))
         pygame.draw.circle(screen, (255, 230, 80), bullet_center, bullet_radius)
 
-    text = font.render(f"Score: {counter}", True, (255,255,255))
+    text = font.render(
+        f"Score: {counter}   Stamina: {int(stamina)}   Health: {player_health}",
+        True,
+        (255, 255, 255),
+    )
     screen.blit(text, (10,10))
 
     pygame.display.flip()
