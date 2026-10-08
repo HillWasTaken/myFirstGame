@@ -107,7 +107,7 @@ while running:
                 counter -= 1
             elif bullet["position"].distance_to((enemy_x, enemy_y)) < bullet_radius + enemy_radius:
                 enemy_x, enemy_y = spawnEnemy()
-                couter += 1
+                counter += 1
             elif (0 <= bullet["position"].x <= screen.get_width() and 0 <= bullet["position"].y <= screen.get_height()):
                 remaining_bullets.append(bullet)
                 
